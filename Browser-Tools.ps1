@@ -27,8 +27,13 @@ if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
     return
 }
 
-Add-Type -Namespace Native -Name Dpi -MemberDefinition '[DllImport("user32.dll")] public static extern bool SetProcessDPIAware();'
-[void][Native.Dpi]::SetProcessDPIAware()
+Add-Type -Namespace Native -Name Win -MemberDefinition @'
+[DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
+[DllImport("user32.dll")] public static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr w, IntPtr l);
+[DllImport("uxtheme.dll", CharSet = CharSet.Unicode)] public static extern int SetWindowTheme(IntPtr hWnd, string app, string idList);
+[DllImport("dwmapi.dll")] public static extern int DwmSetWindowAttribute(IntPtr hWnd, int attr, ref int value, int size);
+'@
+[void][Native.Win]::SetProcessDPIAware()
 [Windows.Forms.Application]::EnableVisualStyles()
 
 $users = "$env:SystemDrive\Users\*"
@@ -133,12 +138,25 @@ S Chrome Telemetry 'Feedback surveys' 'Stops Chrome showing feedback surveys.' @
 S Chrome Telemetry 'Send feedback' 'Removes the "Send feedback" option.' @{ UserFeedbackAllowed = 0 }
 S Chrome Telemetry 'Safe Browsing surveys' 'Stops Safe Browsing surveys.' @{ SafeBrowsingSurveysEnabled = 0 }
 S Chrome Telemetry 'Enhanced spell check' 'Stops sending typed text to Google for spell check. Basic spell check still works.' @{ SpellCheckServiceEnabled = 0 }
+S Chrome Privacy 'Keep encrypted DNS on' 'Chrome turns off its automatic encrypted DNS once any policy is set. This turns it back on.' @{ DnsOverHttpsMode = 'automatic' }
+S Chrome Privacy 'Saved card checks' 'Stops websites checking whether you have saved payment cards.' @{ PaymentMethodQueryEnabled = 0 }
 S Chrome Clutter 'Promotions' 'Hides Google promotional content.' @{ PromotionsEnabled = 0 }
 S Chrome Clutter 'Shopping features' 'Turns off price tracking and the shopping list.' @{ ShoppingListEnabled = 0 }
 S Chrome Clutter 'New Tab page cards' 'Hides the cards on the New Tab page.' @{ NTPCardsVisible = 0 }
 S Chrome Clutter 'Default browser nag' 'Stops Chrome asking to be the default browser. It can no longer set itself as default.' @{ DefaultBrowserSettingEnabled = 0 }
 S Chrome Clutter 'Run in background' 'Chrome fully exits when its last window is closed.' @{ BackgroundModeEnabled = 0 }
+S Chrome Clutter 'Separate profile bubble' 'Stops the "continue in a separate profile?" bubble when you sign in to a Google account on the web.' @{ SigninInterceptionEnabled = 0 }
 S Chrome Optional 'Address bar suggestions' 'Stops sending what you type in the address bar to Google. You lose search suggestions.' @{ SearchSuggestEnabled = 0 } -default $false
+S Chrome Optional 'Memory Saver' 'Frees memory from tabs you are not using. They reload when you go back to them.' @{ HighEfficiencyModeEnabled = 1; MemorySaverModeSavings = 1 } -default $false
+S Chrome Optional 'Background timer throttling' 'Slows timers in background tabs to once a minute after 5 minutes, saving CPU and battery. Alerts from web apps in background tabs can arrive late.' @{ IntensiveWakeUpThrottlingEnabled = 1 } -default $false
+S Chrome Optional 'Hide local IP from WebRTC' 'Stops calls and WebRTC sites seeing your local network address. Call quality may drop on some networks.' @{ WebRtcIPHandling = 'default_public_interface_only' } -default $false
+S Chrome Optional 'HTTPS warning' 'Warns before opening a site that cannot use a secure HTTPS connection.' @{ HttpsOnlyMode = 'force_balanced_enabled' } -default $false
+S Chrome Optional 'Device access prompts' 'Stops websites asking for USB, HID, serial or Bluetooth devices. Web tools that flash or configure devices stop working.' @{ DefaultWebUsbGuardSetting = 2; DefaultWebHidGuardSetting = 2; DefaultSerialGuardSetting = 2; DefaultWebBluetoothGuardSetting = 2 } -default $false
+S Chrome Optional 'Block dangerous downloads' 'Blocks downloads that Safe Browsing flags as malicious, with no way to keep them.' @{ DownloadRestrictions = 4 } -default $false
+S Chrome Optional 'Notification prompts' 'Blocks website notifications and the prompts asking to show them.' @{ DefaultNotificationsSetting = 2 } -default $false
+S Chrome Optional 'Location prompts' 'Blocks websites from asking for your location.' @{ DefaultGeolocationSetting = 2 } -default $false
+S Chrome Optional 'Password manager' 'Turns off the built-in password manager, for people who use a separate one.' @{ PasswordManagerEnabled = 0 } -default $false
+S Chrome Optional 'Saved card autofill' 'Stops saving and filling in payment cards.' @{ AutofillSettings = '[{"url_pattern":"*","blocked_types":["payments"]}]' } -default $false
 
 # ---------------- Edge ----------------
 S Edge AI 'Sidebar' 'Hides the sidebar. Edge has no policy to remove the Copilot button for personal accounts.' @{ HubsSidebarEnabled = 0 }
@@ -164,6 +182,8 @@ S Edge Telemetry 'Personalization reporting' 'Stops sending browsing data to per
 S Edge Telemetry 'Send feedback' 'Removes the Send feedback tool.' @{ UserFeedbackAllowed = 0 }
 S Edge Telemetry 'Search page telemetry' 'Stops telemetry on other search engines'' result pages.' @{ Edge3PSerpTelemetryEnabled = 0 }
 S Edge Telemetry 'Experiments' 'Stops Edge downloading feature experiments. Configuration fixes still arrive.' @{ ExperimentationAndConfigurationServiceControl = 1 }
+S Edge Privacy 'Keep encrypted DNS on' 'Edge turns off its automatic encrypted DNS once any policy is set. This turns it back on.' @{ DnsOverHttpsMode = 'automatic' }
+S Edge Privacy 'Saved card checks' 'Stops websites checking whether you have saved payment cards.' @{ PaymentMethodQueryEnabled = 0 }
 S Edge Clutter 'New Tab news feed' 'Removes the MSN news feed from the New Tab page.' @{ NewTabPageContentEnabled = 0 }
 S Edge Clutter 'Sponsored New Tab tiles' 'Hides the default sponsored tiles on the New Tab page.' @{ NewTabPageHideDefaultTopSites = 1 }
 S Edge Clutter 'Microsoft 365 app launcher' 'Hides the app launcher on the New Tab page.' @{ NewTabPageAppLauncherEnabled = 0 }
@@ -189,6 +209,8 @@ S Edge Clutter 'Text selection menu' 'Stops the mini menu popping up when you se
 S Edge Clutter 'Visual search' 'Removes Bing visual search from images.' @{ VisualSearchEnabled = 0 }
 S Edge Clutter 'Search in sidebar' 'Stops search results opening in the sidebar.' @{ SearchInSidebarEnabled = 2 }
 S Edge Clutter 'Promotional tabs (old)' 'Stops full-tab promotions. Only matters on older Edge versions.' @{ PromotionalTabsEnabled = 0 }
+S Edge Clutter 'Sign in to Edge prompt' 'Stops the "sign in to Edge" prompt after you sign in on a Microsoft website.' @{ WebToBrowserSignInEnabled = 0 }
+S Edge Clutter 'Browser essentials button' 'Unpins the Browser essentials button. It still appears when there is an alert.' @{ PinBrowserEssentialsToolbarButton = 0 }
 S Edge Optional 'Address bar suggestions' 'Stops sending what you type in the address bar to Bing. You lose search suggestions.' @{ SearchSuggestEnabled = 0 } -default $false
 S Edge Optional 'Microsoft Editor spell check' 'Spell check runs on your PC only. You lose grammar suggestions.' @{ MicrosoftEditorProofingEnabled = 0 } -default $false
 S Edge Optional 'Share with Windows Search' 'Stops sharing browsing data with Windows Search.' @{ LocalBrowserDataShareEnabled = 0 } -default $false
@@ -196,6 +218,18 @@ S Edge Optional 'Online error help' 'Network errors and missing pages are handle
 S Edge Optional 'New Tab quick links' 'Hides all quick links on the New Tab page, including your own.' @{ NewTabPageQuickLinksEnabled = 0 } -default $false
 S Edge Optional 'Live video translation' 'Turns off on-device live video translation.' @{ LiveVideoTranslationEnabled = 0 } -default $false
 S Edge Optional 'Drop' 'Turns off Drop file and note sharing between your devices.' @{ EdgeEDropEnabled = 0 } -default $false
+S Edge Optional 'Sleeping tabs after 5 minutes' 'Puts tabs you have not used for 5 minutes to sleep to save memory.' @{ SleepingTabsEnabled = 1; SleepingTabsTimeout = 300 } -default $false
+S Edge Optional 'Background timer throttling' 'Slows timers in background tabs to once a minute after 5 minutes, saving CPU and battery. Alerts from web apps in background tabs can arrive late.' @{ IntensiveWakeUpThrottlingEnabled = 1 } -default $false
+S Edge Optional 'Hide local IP from WebRTC' 'Stops calls and WebRTC sites seeing your local network address. Call quality may drop on some networks.' @{ WebRtcLocalhostIpHandling = 'default_public_interface_only' } -default $false
+S Edge Optional 'Strict tracking prevention' 'Blocks most trackers across sites. Some sites may not work properly.' @{ TrackingPrevention = 3 } -default $false
+S Edge Optional 'Automatic Microsoft sign-in' 'Stops Edge silently signing you in to Bing, MSN and Copilot. You sign in yourself when you want to.' @{ ProactiveAuthWorkflowEnabled = 0 } -default $false
+S Edge Optional 'HTTPS warning' 'Warns before opening a site that cannot use a secure HTTPS connection.' @{ HttpsOnlyMode = 'force_balanced_enabled' } -default $false
+S Edge Optional 'Device access prompts' 'Stops websites asking for USB, HID, serial or Bluetooth devices. Web tools that flash or configure devices stop working.' @{ DefaultWebUsbGuardSetting = 2; DefaultWebHidGuardSetting = 2; DefaultSerialGuardSetting = 2; DefaultWebBluetoothGuardSetting = 2 } -default $false
+S Edge Optional 'Block dangerous downloads' 'Blocks downloads that Safe Browsing flags as malicious, with no way to keep them.' @{ DownloadRestrictions = 4 } -default $false
+S Edge Optional 'Notification prompts' 'Blocks website notifications and the prompts asking to show them.' @{ DefaultNotificationsSetting = 2 } -default $false
+S Edge Optional 'Location prompts' 'Blocks websites from asking for your location.' @{ DefaultGeolocationSetting = 2 } -default $false
+S Edge Optional 'Password manager' 'Turns off the built-in password manager, for people who use a separate one.' @{ PasswordManagerEnabled = 0 } -default $false
+S Edge Optional 'Saved card autofill' 'Stops saving and filling in payment cards.' @{ AutofillCreditCardEnabled = 0 } -default $false
 
 # ---------------- Vivaldi ----------------
 # Vivaldi reads Chromium policies from its own key, but only officially supports them from 8.3
@@ -203,6 +237,8 @@ S Vivaldi AI 'On-device AI model' 'Stops Vivaldi downloading Chromium''s on-devi
 S Vivaldi AI 'Built-in AI for websites' 'Stops websites using the browser''s built-in AI APIs.' @{ BuiltInAIAPIsEnabled = 0 }
 S Vivaldi Telemetry 'Make searches and browsing better' 'Stops sending the URLs you visit to improve browsing.' @{ UrlKeyedAnonymizedDataCollectionEnabled = 0 }
 S Vivaldi Telemetry 'Enhanced spell check' 'Uses only the local spell checker, not the web spelling service.' @{ SpellCheckServiceEnabled = 0 }
+S Vivaldi Privacy 'Keep encrypted DNS on' 'Vivaldi turns off its automatic encrypted DNS once any policy is set. This turns it back on.' @{ DnsOverHttpsMode = 'automatic' }
+S Vivaldi Privacy 'Saved card checks' 'Stops websites checking whether you have saved payment cards.' @{ PaymentMethodQueryEnabled = 0 }
 S Vivaldi Clutter 'Direct Match' 'Turns off sponsored Direct Match suggestions in the address bar.' @{ VivaldiDirectMatchEnabled = 0 }
 S Vivaldi Clutter 'Promotions' 'Hides promotional content.' @{ PromotionsEnabled = 0 }
 S Vivaldi Clutter 'Default browser nag' 'Stops Vivaldi asking to be the default browser.' @{ DefaultBrowserSettingEnabled = 0 }
@@ -211,6 +247,14 @@ S Vivaldi Optional 'Address bar suggestions' 'Stops sending what you type in the
 S Vivaldi Optional 'Built-in VPN' 'Hides the built-in Proton VPN.' @{ VivaldiVPNEnabled = 0 } -default $false
 S Vivaldi Optional 'Online error help' 'Stops using a web service to suggest pages when a site fails to load.' @{ AlternateErrorPagesEnabled = 0 } -default $false
 S Vivaldi Optional 'Preloading' 'Turns off preloading pages. Pages may load a little slower.' @{ NetworkPredictionOptions = 2 } -default $false
+S Vivaldi Optional 'Background timer throttling' 'Slows timers in background tabs to once a minute after 5 minutes, saving CPU and battery. Alerts from web apps in background tabs can arrive late.' @{ IntensiveWakeUpThrottlingEnabled = 1 } -default $false
+S Vivaldi Optional 'Hide local IP from WebRTC' 'Stops calls and WebRTC sites seeing your local network address. Call quality may drop on some networks.' @{ WebRtcIPHandling = 'default_public_interface_only' } -default $false
+S Vivaldi Optional 'HTTPS warning' 'Warns before opening a site that cannot use a secure HTTPS connection.' @{ HttpsOnlyMode = 'force_balanced_enabled' } -default $false
+S Vivaldi Optional 'Device access prompts' 'Stops websites asking for USB, HID, serial or Bluetooth devices. Web tools that flash or configure devices stop working.' @{ DefaultWebUsbGuardSetting = 2; DefaultWebHidGuardSetting = 2; DefaultSerialGuardSetting = 2; DefaultWebBluetoothGuardSetting = 2 } -default $false
+S Vivaldi Optional 'Notification prompts' 'Blocks website notifications and the prompts asking to show them.' @{ DefaultNotificationsSetting = 2 } -default $false
+S Vivaldi Optional 'Location prompts' 'Blocks websites from asking for your location.' @{ DefaultGeolocationSetting = 2 } -default $false
+S Vivaldi Optional 'Password manager' 'Turns off the built-in password manager, for people who use a separate one.' @{ PasswordManagerEnabled = 0 } -default $false
+S Vivaldi Optional 'Saved card autofill' 'Stops saving and filling in payment cards.' @{ AutofillCreditCardEnabled = 0 } -default $false
 
 # ---------------- Firefox and Zen ----------------
 # AIControls is Firefox 149 and newer, GenerativeAI covers 144 to 149
@@ -230,6 +274,7 @@ F Telemetry 'Default browser agent' 'Stops the background task that reports defa
 F Telemetry 'New Tab telemetry' 'Stops sending New Tab page usage data.' @{} @{ 'browser.newtabpage.activity-stream.telemetry' = $false; 'browser.newtabpage.activity-stream.feeds.telemetry' = $false }
 F Telemetry 'Personalized recommendations' 'Stops personalized extension recommendations.' @{} @{ 'browser.discovery.enabled' = $false }
 F Telemetry 'Feedback commands' 'Removes the Submit Feedback and Report Deceptive Site menu items.' @{ DisableFeedbackCommands = 1 }
+F Privacy 'Global Privacy Control' 'Tells every website not to sell or share your data.' @{} @{ 'privacy.globalprivacycontrol.enabled' = $true }
 F Clutter 'Sponsored shortcuts' 'Removes sponsored shortcuts from the New Tab page.' @{ 'FirefoxHome\SponsoredTopSites' = 0 }
 F Clutter 'Sponsored stories' 'Removes sponsored stories from the New Tab page.' @{ 'FirefoxHome\SponsoredStories' = 0; 'FirefoxHome\SponsoredPocket' = 0 }
 F Clutter 'Sponsored suggestions' 'Removes sponsored suggestions from the address bar.' @{ 'FirefoxSuggest\SponsoredSuggestions' = 0 }
@@ -244,6 +289,8 @@ F Clutter 'Default browser nag' 'Stops asking to be the default browser.' @{ Don
 F Clutter 'Terms of Use pop-up' 'Skips the Terms of Use pop-up at startup.' @{ SkipTermsOfUse = 1 }
 F Clutter 'Visual search' 'Removes visual image search from the right-click menu.' @{ VisualSearchEnabled = 0 }
 F Clutter 'Pocket (old)' 'Turns off Pocket. Only matters on older versions.' @{ DisablePocket = 1 }
+F Clutter 'What''s New tab' 'Stops the What''s New tab opening after updates.' @{ OverridePostUpdatePage = '' }
+F Clutter 'Translation pop-up' 'Stops the translation pop-up. The translate button in the address bar stays.' @{} @{ 'browser.translations.automaticallyPopup' = $false }
 F Optional 'Translations' 'Turns off page translation. It runs on your PC and sends nothing to Mozilla.' @{ 'AIControls\Translations\Value' = 'blocked'; TranslateEnabled = 0 } -default $false
 F Optional 'Block all other AI' 'Blocks every AI feature without its own switch, including future ones and Translations.' @{ 'AIControls\Default\Value' = 'blocked' } -default $false
 F Optional 'Address bar suggestions' 'Stops sending what you type in the address bar to your search engine. You lose search suggestions.' @{ SearchSuggestEnabled = 0 } -default $false
@@ -254,8 +301,16 @@ F Optional 'New Tab weather' 'Removes the weather widget from the New Tab page.'
 F Optional 'Preloading' 'Turns off DNS prefetch and preconnect. Pages may load a little slower.' @{ NetworkPrediction = 0 } -default $false
 F Optional 'Firefox Labs' 'Hides Firefox Labs in Settings.' @{ 'UserMessaging\FirefoxLabs' = 0 } -default $false
 F Optional 'Remote feature rollouts' 'Stops Mozilla turning features on between updates. This can also delay some fixes.' @{ DisableRemoteImprovements = 1 } -default $false
+F Optional 'Strict tracking protection' 'Forces Strict Enhanced Tracking Protection. Some sites may not work properly.' @{ 'EnableTrackingProtection\Category' = 'strict' } -default $false
+F Optional 'HTTPS warning' 'Warns before opening a site that cannot use a secure HTTPS connection.' @{ HttpsOnlyMode = 'enabled' } -default $false
+F Optional 'Device access prompts' 'Stops websites asking for serial devices. Web tools that flash or configure devices stop working.' @{ DefaultSerialGuardSetting = 2 } -default $false
+F Optional 'Notification prompts' 'Blocks websites from asking to show notifications.' @{ 'Permissions\Notifications\BlockNewRequests' = 1 } -default $false
+F Optional 'Location prompts' 'Blocks websites from asking for your location.' @{ 'Permissions\Location\BlockNewRequests' = 1 } -default $false
+F Optional 'Downloads panel' 'Stops the downloads panel popping open for every download.' @{} @{ 'browser.download.alwaysOpenPanel' = $false } -default $false
+F Optional 'Password manager' 'Turns off the built-in password manager, for people who use a separate one.' @{ PasswordManagerEnabled = 0 } -default $false
+F Optional 'Saved card autofill' 'Stops saving and filling in payment cards.' @{ AutofillCreditCardEnabled = 0 } -default $false
 
-$groupTitles = [ordered]@{ AI = 'AI features'; Telemetry = 'Telemetry'; Clutter = 'Clutter'; Optional = 'Optional (not ticked by default)' }
+$groupTitles = [ordered]@{ AI = 'AI features'; Telemetry = 'Telemetry'; Privacy = 'Privacy'; Clutter = 'Clutter'; Optional = 'Optional (not ticked by default)' }
 
 # ---------------- Registry ----------------
 function PathOf($b, $v) { if ($v.Sub) { "$($b.Key)\$($v.Sub)" } else { $b.Key } }
@@ -300,7 +355,8 @@ function Get-Status($b, $s, $state) {
         if ($v.Prop -eq 'Locked') { continue }
         $path = PathOf $b $v
         if (-not $state.Cache.Contains($path)) { $state.Cache[$path] = Read-Key $path }
-        if ("$($state.Cache[$path][$v.Prop])" -eq "$($v.Value)") { $hits++ } else { $misses++ }
+        $values = $state.Cache[$path]
+        if ($values.Contains($v.Prop) -and "$($values[$v.Prop])" -eq "$($v.Value)") { $hits++ } else { $misses++ }
     }
     foreach ($p in $s.Prefs) {
         $e = if ($state.Prefs) { $state.Prefs[$p.Name] }
@@ -339,14 +395,39 @@ $info.Height = Px 46
 $info.Padding = New-Object Windows.Forms.Padding((Px 8), 0, 0, 0)
 $info.TextAlign = 'MiddleLeft'
 
-$tabs = New-Object Windows.Forms.TabControl
-$tabs.Dock = 'Fill'
-$tabs.Padding = New-Object Drawing.Point((Px 12), (Px 4))
+# A row of flat buttons instead of a TabControl, whose tab strip cannot be themed dark
+$tabBar = New-Object Windows.Forms.FlowLayoutPanel
+$tabBar.Dock = 'Top'
+$tabBar.AutoSize = $true
+$tabBar.Padding = New-Object Windows.Forms.Padding((Px 6), 0, 0, 0)
+$body = New-Object Windows.Forms.Panel
+$body.Dock = 'Fill'
+$body.Padding = New-Object Windows.Forms.Padding((Px 8), (Px 4), (Px 8), 0)
+
+function Current { $script:current }
+
+function Show-Browser($b) {
+    $script:current = $b
+    foreach ($x in $browsers) {
+        $x.List.Visible = $x -eq $b
+        $x.Tab.Checked = $x -eq $b
+    }
+    Set-TabColors
+}
 
 foreach ($b in $browsers) {
     $installed = [bool]($b.Exes | Where-Object { Test-Path $_ })
-    $page = New-Object Windows.Forms.TabPage($(if ($installed) { $b.Name } else { "$($b.Name) (not installed)" }))
-    $page.Tag = $b
+    $tab = New-Object Windows.Forms.RadioButton
+    $tab.Appearance = 'Button'
+    $tab.AutoSize = $true
+    $tab.FlatStyle = 'Flat'
+    $tab.FlatAppearance.BorderSize = 0
+    $tab.Padding = New-Object Windows.Forms.Padding((Px 10), (Px 3), (Px 10), (Px 3))
+    $tab.Margin = New-Object Windows.Forms.Padding(0, 0, (Px 2), 0)
+    $tab.Text = if ($installed) { $b.Name } else { "$($b.Name) (not installed)" }
+    $tab.Tag = $b
+    $tab.Add_Click({ Show-Browser $this.Tag })
+    $tabBar.Controls.Add($tab)
 
     $list = New-Object Windows.Forms.ListView
     $list.View = 'Details'
@@ -357,6 +438,11 @@ foreach ($b in $browsers) {
     [void]$list.Columns.Add('Feature', (Px 260))
     [void]$list.Columns.Add('What turning it off does', (Px 610))
     [void]$list.Columns.Add('Status on this PC', (Px 150))
+    # Windows draws rows and group headings; column headings are drawn here so they stay readable in dark mode
+    $list.OwnerDraw = $true
+    $list.Add_DrawColumnHeader({ param($sender, $e) Draw-Header $e })
+    $list.Add_DrawItem({ param($sender, $e) $e.DrawDefault = $true })
+    $list.Add_DrawSubItem({ param($sender, $e) $e.DrawDefault = $true })
 
     $groups = @{}
     foreach ($g in $groupTitles.Keys) {
@@ -375,11 +461,9 @@ foreach ($b in $browsers) {
         [void]$list.Items.Add($item)
     }
     $b | Add-Member -NotePropertyName List -NotePropertyValue $list -Force
-    $page.Controls.Add($list)
-    $tabs.TabPages.Add($page)
+    $b | Add-Member -NotePropertyName Tab -NotePropertyValue $tab -Force
+    $body.Controls.Add($list)
 }
-
-function Current { $tabs.SelectedTab.Tag }
 
 function Update-Status($b) {
     $state = Read-Policies $b
@@ -462,6 +546,7 @@ function Add-Button($text, $onClick) {
     $btn.Text = $text
     $btn.AutoSize = $true
     $btn.Padding = New-Object Windows.Forms.Padding((Px 6), (Px 2), (Px 6), (Px 2))
+    $btn.FlatStyle = 'Flat'
     $btn.Add_Click({
             try { & $onClick }
             catch { [void](Msg $_.Exception.Message 'OK' 'Error') }
@@ -502,8 +587,80 @@ Add-Button 'Delete AI model files' {
 Add-Button 'Tick all' { foreach ($i in (Current).List.Items) { $i.Checked = $true } }
 Add-Button 'Untick all' { foreach ($i in (Current).List.Items) { $i.Checked = $false } }
 
-$form.Controls.Add($tabs)
+# ---------------- Theme: follows the Windows light/dark app mode, checked every 2 seconds ----------------
+$palettes = @{
+    Dark  = @{ Back = '#202020'; List = '#2b2b2b'; Fore = '#f0f0f0'; Muted = '#b4b4b4'; Button = '#333333'; Border = '#4a4a4a' }
+    Light = @{ Back = '#f3f3f3'; List = '#ffffff'; Fore = '#1a1a1a'; Muted = '#505050'; Button = '#ffffff'; Border = '#c8c8c8' }
+}
+function C($hex) { [Drawing.ColorTranslator]::FromHtml($hex) }
+$null_ = [Management.Automation.Language.NullString]::Value
+
+function Draw-Header($e) {
+    if (-not $script:dark) { $e.DrawDefault = $true; return }
+    $p = $script:palette
+    $g = $e.Graphics
+    $r = $e.Bounds
+    $g.FillRectangle((New-Object Drawing.SolidBrush (C $p.List)), $r)
+    $g.DrawLine((New-Object Drawing.Pen (C $p.Border)), ($r.Right - 1), $r.Top, ($r.Right - 1), ($r.Bottom - 1))
+    $text = New-Object Drawing.Rectangle(($r.X + (Px 6)), $r.Y, ($r.Width - (Px 8)), $r.Height)
+    [Windows.Forms.TextRenderer]::DrawText($g, $e.Header.Text, $e.Font, $text, (C $p.Muted), [Windows.Forms.TextFormatFlags]'VerticalCenter, Left, EndEllipsis')
+}
+
+function Test-DarkMode {
+    (Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize' -ErrorAction SilentlyContinue).AppsUseLightTheme -eq 0
+}
+
+function Set-TabColors {
+    $p = $script:palette
+    if (-not $p) { return }
+    foreach ($x in $browsers) {
+        $selected = $x -eq $script:current
+        $x.Tab.BackColor = C $(if ($selected) { $p.List } else { $p.Back })
+        $x.Tab.ForeColor = C $(if ($selected) { $p.Fore } else { $p.Muted })
+        $x.Tab.FlatAppearance.CheckedBackColor = $x.Tab.BackColor
+        $x.Tab.FlatAppearance.MouseOverBackColor = C $p.Button
+    }
+}
+
+function Set-Theme($dark) {
+    $script:dark = $dark
+    $p = $script:palette = $palettes[$(if ($dark) { 'Dark' } else { 'Light' })]
+    $form.BackColor = C $p.Back
+    $form.ForeColor = C $p.Fore
+    $info.ForeColor = C $p.Muted
+    foreach ($btn in $panel.Controls) {
+        $btn.BackColor = C $p.Button
+        $btn.ForeColor = C $p.Fore
+        $btn.FlatAppearance.BorderColor = C $p.Border
+    }
+    foreach ($x in $browsers) {
+        $x.List.BackColor = C $p.List
+        $x.List.ForeColor = C $p.Fore
+        # scroll bars, group headings and checkboxes take File Explorer's dark theme
+        [void][Native.Win]::SetWindowTheme($x.List.Handle, $(if ($dark) { 'DarkMode_ItemsView' } else { 'Explorer' }), $null_)
+        $header = [Native.Win]::SendMessage($x.List.Handle, 0x101F, [IntPtr]::Zero, [IntPtr]::Zero) # LVM_GETHEADER
+        [void][Native.Win]::SetWindowTheme($header, $(if ($dark) { 'DarkMode_ItemsView' } else { $null_ }), $null_)
+        $x.List.Invalidate($true)
+    }
+    Set-TabColors
+    # dark title bar: DWMWA_USE_IMMERSIVE_DARK_MODE is 20, or 19 on Windows 10 before 20H1
+    $on = [int][bool]$dark
+    if ([Native.Win]::DwmSetWindowAttribute($form.Handle, 20, [ref]$on, 4) -ne 0) { [void][Native.Win]::DwmSetWindowAttribute($form.Handle, 19, [ref]$on, 4) }
+    # Windows 10 only repaints the caption when it is activated again (WM_NCACTIVATE off, then on)
+    [void][Native.Win]::SendMessage($form.Handle, 0x86, [IntPtr]::Zero, [IntPtr]::Zero)
+    [void][Native.Win]::SendMessage($form.Handle, 0x86, [IntPtr]1, [IntPtr]::Zero)
+    $form.Refresh()
+}
+
+$timer = New-Object Windows.Forms.Timer
+$timer.Interval = 2000
+$timer.Add_Tick({ $dark = Test-DarkMode; if ($dark -ne $script:dark) { Set-Theme $dark } })
+$form.Add_Shown({ Set-Theme (Test-DarkMode); $timer.Start() })
+
+$form.Controls.Add($body)
 $form.Controls.Add($panel)
+$form.Controls.Add($tabBar)
 $form.Controls.Add($info)
 foreach ($b in $browsers) { Update-Status $b }
+Show-Browser $browsers[0]
 [void]$form.ShowDialog()
