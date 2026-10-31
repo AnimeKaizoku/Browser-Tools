@@ -23,6 +23,8 @@ Either way it asks for administrator rights, because browser policies live under
 - **Turn off ticked** writes the policies. Restart the browser afterwards.
 - **Restore ticked to default** removes them again, so the browser goes back to normal.
 - **Delete AI model files** frees the on-device AI model (several GB) that Chrome and Edge download. Firefox and Zen delete their own models once their AI features are blocked.
+- **Clean up old policies** lists policies on that tab that the browser no longer uses or that a newer policy replaced (for example old Privacy Sandbox settings in Chrome), and removes them after you confirm.
+- **Save ticks...** and **Load ticks...** store the ticks of every tab in a small `.json` file, so you can share your setup and load it on another PC. Loading only sets the ticks; click **Turn off ticked** on each tab to apply.
 - Hover a row to see exactly which policies it sets.
 
 You can check what a browser picked up at `chrome://policy`, `edge://policy`, `about:policies` (Firefox, Zen) or `vivaldi://policy`.

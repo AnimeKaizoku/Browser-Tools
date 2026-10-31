@@ -82,20 +82,21 @@ $browsers = @(
     }
 )
 
+# "Subkey\ValueName" (or just "ValueName") -> Id, Sub, Prop
+function Split-Id($id) {
+    $cut = $id.LastIndexOf('\')
+    [pscustomobject]@{ Id = $id; Sub = $(if ($cut -ge 0) { $id.Substring(0, $cut) } else { '' }); Prop = $id.Substring($cut + 1) }
+}
+
 $settings = New-Object Collections.ArrayList
 # $set maps "ValueName" or "Subkey\ValueName" to the value that turns the feature off (int = DWORD, string = REG_SZ).
 # $prefs maps Firefox pref names to locked values written into the Preferences policy.
 # $legacy lists old value names this setting replaces; they are removed on apply and restore.
 function S($browser, $group, $name, $desc, $set, $prefs, $default = $true, $legacy = @()) {
     $values = foreach ($id in $set.Keys) {
-        $cut = $id.LastIndexOf('\')
-        [pscustomobject]@{
-            Id    = $id
-            Sub   = if ($cut -ge 0) { $id.Substring(0, $cut) } else { '' }
-            Prop  = $id.Substring($cut + 1)
-            Value = $set[$id]
-            Type  = if ($set[$id] -is [string]) { 'String' } else { 'DWord' }
-        }
+        Split-Id $id |
+            Add-Member -NotePropertyName Value -NotePropertyValue $set[$id] -PassThru |
+            Add-Member -NotePropertyName Type -NotePropertyValue $(if ($set[$id] -is [string]) { 'String' } else { 'DWord' }) -PassThru
     }
     $prefList = if ($prefs) { foreach ($p in $prefs.Keys) { [pscustomobject]@{ Name = $p; Value = $prefs[$p] } } }
     [void]$settings.Add([pscustomobject]@{
@@ -108,10 +109,44 @@ function S($browser, $group, $name, $desc, $set, $prefs, $default = $true, $lega
 function F($group, $name, $desc, $set, $prefs, $default = $true) {
     $all = $set.Clone()
     foreach ($id in $set.Keys) {
-        $cut = $id.LastIndexOf('\')
-        if ($cut -ge 0) { $all[$id.Substring(0, $cut) + '\Locked'] = 1 }
+        $sub = (Split-Id $id).Sub
+        if ($sub) { $all["$sub\Locked"] = 1 }
     }
     S Firefox $group $name $desc $all $prefs $default
+}
+
+# Values the browsers themselves report as obsolete, deprecated or overridden by a newer policy.
+# "Clean up old policies" offers to remove the ones it finds. Never list a value a setting above writes.
+$chromiumOld = [ordered]@{
+    PrivacySandboxPromptEnabled         = 'Deprecated: Chrome no longer shows the Privacy Sandbox prompt.'
+    PrivacySandboxAdTopicsEnabled       = 'Deprecated in Chrome 144 together with the Topics API.'
+    PrivacySandboxSiteEnabledAdsEnabled = 'Deprecated in Chrome 144 together with the Protected Audience API.'
+    PrivacySandboxAdMeasurementEnabled  = 'Deprecated in Chrome 144 together with the Attribution Reporting API.'
+    PromotionalTabsEnabled              = 'Deprecated: replaced by PromotionsEnabled ("Promotions").'
+    LensOverlaySettings                 = 'Deprecated: replaced by "Ask Google about this page and Lens".'
+    LensRegionSearchEnabled             = 'Deprecated: replaced by "Ask Google about this page and Lens".'
+    LensDesktopNTPSearchEnabled         = 'Deprecated: replaced by "Ask Google about this page and Lens".'
+}
+$oldPolicies = @{
+    Chrome  = $chromiumOld
+    Vivaldi = $chromiumOld
+    Edge    = [ordered]@{
+        MetricsReportingEnabled    = 'Obsolete: Edge ignores it. "Diagnostic data" replaces it.'
+        WebWidgetAllowed           = 'Deprecated: replaced by "Desktop search bar" (SearchbarAllowed).'
+        DiscoverPageContextEnabled = 'Obsolete: Edge ignores it.'
+        CopilotCDPPageContext      = 'Obsolete: Edge ignores it.'
+        EdgeCollectionsEnabled     = 'Obsolete: Collections was removed from Edge.'
+        EdgeFollowEnabled          = 'Obsolete: Edge ignores it.'
+        AutomaticHttpsDefault      = 'Obsolete: Edge ignores it.'
+        NewPDFReaderEnabled        = 'Deprecated.'
+        EdgeWalletCheckoutEnabled  = 'Deprecated: Wallet checkout was retired.'
+        WalletDonationEnabled      = 'Deprecated: Wallet donations were retired.'
+        AllowGamesMenu             = 'Deprecated: the games menu was retired.'
+    }
+    Firefox = [ordered]@{
+        'UserMessaging\WhatsNew' = 'Deprecated: the What''s New icon no longer exists.'
+        'FirefoxHome\Snippets'   = 'Deprecated: snippets were removed in Firefox 122.'
+    }
 }
 
 # ---------------- Chrome ----------------
@@ -536,6 +571,44 @@ function Close-Browser($b) {
     Start-Sleep -Seconds 1
 }
 
+# Old policies (see $oldPolicies) that are set on this PC, skipping any value a setting on the tab writes
+function Find-OldPolicies($b) {
+    $old = $oldPolicies[$(if ($b.Uses) { $b.Uses } else { $b.Name })]
+    if (-not $old) { return }
+    $managed = @{}
+    foreach ($item in $b.List.Items) { foreach ($v in $item.Tag.Values) { $managed[$v.Id] = $true } }
+    foreach ($id in $old.Keys) {
+        if ($managed[$id]) { continue }
+        $v = Split-Id $id
+        $path = PathOf $b $v
+        $cur = (Read-Key $path)[$v.Prop]
+        if ($null -eq $cur) { continue }
+        $v | Add-Member -NotePropertyMembers @{ Path = $path; Current = (@($cur) -join ';'); Why = $old[$id] } -PassThru
+    }
+}
+
+# A preset is the ticked setting names of every tab, saved as JSON
+function Export-Preset($path) {
+    $ticks = [ordered]@{}
+    foreach ($b in $browsers) { $ticks[$b.Name] = @($b.List.CheckedItems | ForEach-Object { $_.Text }) }
+    [ordered]@{ tool = $title; browsers = $ticks } | ConvertTo-Json -Depth 4 | Set-Content -Path $path -Encoding UTF8
+}
+
+# Sets the ticks from a preset and returns the browser tabs it covered
+function Import-Preset($path) {
+    $preset = Get-Content -Path $path -Raw | ConvertFrom-Json
+    $loaded = foreach ($b in $browsers) {
+        $names = $preset.browsers.($b.Name)
+        if ($null -eq $names) { continue }
+        foreach ($item in $b.List.Items) { $item.Checked = @($names) -contains $item.Text }
+        $b.Name
+    }
+    if (-not $loaded) { throw "$path is not a $title preset." }
+    @($loaded)
+}
+
+$presetFilter = "$title preset (*.json)|*.json"
+
 $panel = New-Object Windows.Forms.FlowLayoutPanel
 $panel.Dock = 'Bottom'
 $panel.AutoSize = $true
@@ -584,8 +657,41 @@ Add-Button 'Delete AI model files' {
     [void](Msg $done)
 }
 
+Add-Button 'Clean up old policies' {
+    $b = Current
+    $old = @(Find-OldPolicies $b)
+    if (-not $old) {
+        [void](Msg "No old $($b.Name) policies found. Nothing to clean up.")
+        return
+    }
+    $list = ($old | ForEach-Object { "$($_.Id) = $($_.Current)`n      $($_.Why)" }) -join "`n"
+    if ((Msg "Found $($old.Count) old $($b.Name) policies that the browser no longer uses or that newer policies replace:`n`n$list`n`nRemove them?" 'YesNo' 'Question') -ne 'Yes') { return }
+    foreach ($v in $old) {
+        Remove-ItemProperty -Path $v.Path -Name $v.Prop -ErrorAction SilentlyContinue
+        Remove-EmptyKeys $b $v.Path
+    }
+    [void](Msg "$($b.Name): removed $($old.Count) old policies.`n`nRestart the browser to apply.")
+}
+
 Add-Button 'Tick all' { foreach ($i in (Current).List.Items) { $i.Checked = $true } }
 Add-Button 'Untick all' { foreach ($i in (Current).List.Items) { $i.Checked = $false } }
+
+Add-Button 'Save ticks...' {
+    $dialog = New-Object Windows.Forms.SaveFileDialog
+    $dialog.Filter = $presetFilter
+    $dialog.FileName = 'browser-tools-preset.json'
+    if ($dialog.ShowDialog($form) -ne 'OK') { return }
+    Export-Preset $dialog.FileName
+    [void](Msg "Saved the ticks of every tab to:`n`n$($dialog.FileName)`n`nLoad it with ""Load ticks..."" on any PC.")
+}
+
+Add-Button 'Load ticks...' {
+    $dialog = New-Object Windows.Forms.OpenFileDialog
+    $dialog.Filter = $presetFilter
+    if ($dialog.ShowDialog($form) -ne 'OK') { return }
+    $loaded = Import-Preset $dialog.FileName
+    [void](Msg "Loaded ticks for: $($loaded -join ', ').`n`nNothing is changed yet. Check each tab, then click ""Turn off ticked"" on it.")
+}
 
 # ---------------- Theme: follows the Windows light/dark app mode, checked every 2 seconds ----------------
 $palettes = @{
