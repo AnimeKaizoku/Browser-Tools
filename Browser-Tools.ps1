@@ -83,8 +83,9 @@ $browsers = @(
     [pscustomobject]@{
         Name    = 'Helium'
         Key     = 'HKLM:\SOFTWARE\Policies\Helium'
-        # Helium keeps Chromium's chrome.exe name; Get-Running tells it apart from Chrome by folder
+        # Helium keeps Chromium's chrome.exe name; Brand is its file description, which Get-Running uses to tell it apart from Chrome
         Process = 'chrome'
+        Brand   = 'Helium'
         Exes    = @("$pf\imput\Helium\Application\chrome.exe", "$users\AppData\Local\imput\Helium\Application\chrome.exe")
         Models  = @("$users\AppData\Local\imput\Helium\User Data\OptGuideOnDeviceModel")
     }
@@ -139,7 +140,7 @@ $oldPolicies = @{
     Chrome  = $chromiumOld
     Vivaldi = $chromiumOld
     Helium  = $chromiumOld
-    Edge   = [ordered]@{
+    Edge    = [ordered]@{
         MetricsReportingEnabled    = 'Obsolete: Edge ignores it. "Diagnostic data" replaces it.'
         WebWidgetAllowed           = 'Deprecated: replaced by "Desktop search bar" (SearchbarAllowed).'
         DiscoverPageContextEnabled = 'Obsolete: Edge ignores it.'
@@ -307,7 +308,7 @@ S Helium AI 'On-device AI model' 'Makes sure Helium never downloads Chromium''s 
 S Helium AI 'Built-in AI for websites' 'Stops websites using the browser''s built-in AI APIs.' @{ BuiltInAIAPIsEnabled = 0 }
 S Helium Privacy 'Keep encrypted DNS on' 'Helium turns off its automatic encrypted DNS once any policy is set. This turns it back on.' @{ DnsOverHttpsMode = 'automatic' }
 S Helium Privacy 'Saved card checks' 'Stops websites checking whether you have saved payment cards.' @{ PaymentMethodQueryEnabled = 0 }
-S Helium Clutter 'Default browser nag' 'Stops Helium asking to be the default browser.' @{ DefaultBrowserSettingEnabled = 0 }
+S Helium Clutter 'Default browser nag' 'Stops Helium asking to be the default browser. It can no longer set itself as default.' @{ DefaultBrowserSettingEnabled = 0 }
 S Helium Clutter 'Run in background' 'Helium fully exits when its last window is closed.' @{ BackgroundModeEnabled = 0 }
 S Helium Optional 'Address bar suggestions' 'Stops sending what you type in the address bar to your search engine. You lose search suggestions.' @{ SearchSuggestEnabled = 0 } -default $false
 S Helium Optional 'Preloading' 'Turns off preloading pages. Pages may load a little slower.' @{ NetworkPredictionOptions = 2 } -default $false
@@ -317,7 +318,7 @@ S Helium Optional 'HTTPS warning' 'Warns before opening a site that cannot use a
 S Helium Optional 'Device access prompts' 'Stops websites asking for USB, HID, serial or Bluetooth devices. Web tools that flash or configure devices stop working.' @{ DefaultWebUsbGuardSetting = 2; DefaultWebHidGuardSetting = 2; DefaultSerialGuardSetting = 2; DefaultWebBluetoothGuardSetting = 2 } -default $false
 S Helium Optional 'Notification prompts' 'Blocks website notifications and the prompts asking to show them.' @{ DefaultNotificationsSetting = 2 } -default $false
 S Helium Optional 'Location prompts' 'Blocks websites from asking for your location.' @{ DefaultGeolocationSetting = 2 } -default $false
-S Helium Optional 'Saved card autofill' 'Stops saving and filling in payment cards.' @{ AutofillCreditCardEnabled = 0 } -default $false
+S Helium Optional 'Saved card autofill' 'Stops saving and filling in payment cards.' @{ AutofillSettings = '[{"url_pattern":"*","blocked_types":["payments"]}]'; AutofillCreditCardEnabled = 0 } -default $false
 
 # ---------------- Firefox and Zen ----------------
 # AIControls is Firefox 149 and newer, GenerativeAI covers 144 to 149
@@ -582,20 +583,17 @@ function Set-Ticked($restore) {
     $n = $ticked.Count - $skipped.Count
     $did = if ($restore) { "restored $n feature(s) to the browser's default" } else { "turned off $n feature(s)" }
     $note = if ($skipped) { "`n`nThe existing Firefox ""Preferences"" policy is not valid JSON, so it was left untouched and these settings were skipped: $($skipped -join ', ')." }
-    [void](Msg "$($b.Name): $did.$note`n`nRestart the browser to apply. Chrome and Edge can also reload policies from chrome://policy or edge://policy.")
+    [void](Msg "$($b.Name): $did.$note`n`nRestart the browser to apply. Chrome, Edge and Helium can also reload policies from chrome://policy, edge://policy or helium://policy.")
 }
 
 function Get-ModelDirs($b) { @(Get-ChildItem $b.Models -Directory -Force -ErrorAction SilentlyContinue) }
 
-# Chrome and Helium both run as chrome.exe, so a process belongs to the browser whose install folder it runs from.
-# One from anywhere else (Chrome Beta, Canary) belongs to the first browser with that process name.
+# Chrome and Helium both run as chrome.exe. A browser with a Brand owns the processes with that file description,
+# wherever they were installed; the rest (Chrome, Beta, Canary) belong to the browser without one.
 function Get-Running($b) {
-    $same = @($browsers | Where-Object Process -eq $b.Process)
+    $brands = @($browsers | Where-Object { $_.Process -eq $b.Process -and $_.Brand } | ForEach-Object Brand)
     Get-Process $b.Process -ErrorAction SilentlyContinue | Where-Object {
-        $path = $_.Path
-        $owner = $same | Where-Object { $_.Exes | Where-Object { $path -like $_ } } | Select-Object -First 1
-        if (-not $owner) { $owner = $same[0] }
-        $owner -eq $b
+        if ($b.Brand) { $_.Description -eq $b.Brand } else { $brands -notcontains $_.Description }
     }
 }
 

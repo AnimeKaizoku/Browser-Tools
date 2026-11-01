@@ -28,7 +28,7 @@ Either way it asks for administrator rights, because browser policies live under
 - **Save ticks...** and **Load ticks...** store the ticks of every tab in a small `.json` file, so you can share your setup and load it on another PC. Loading only sets the ticks; click **Turn off ticked** on each tab to apply.
 - Hover a row to see exactly which policies it sets.
 
-You can check what a browser picked up at `chrome://policy`, `edge://policy`, `about:policies` (Firefox, Zen) `vivaldi://policy` or `helium://policy`.
+You can check what a browser picked up at `chrome://policy`, `edge://policy`, `about:policies` (Firefox, Zen), `vivaldi://policy` or `helium://policy`.
 
 ## Good to know
 
