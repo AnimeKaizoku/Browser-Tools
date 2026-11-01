@@ -1,4 +1,4 @@
-# Browser Tools: turn off AI features, telemetry and clutter in Chrome, Edge, Firefox, Zen, Vivaldi and Helium using Windows policies.
+# Browser Tools: turn off AI features, telemetry and clutter in Chrome, Edge, Firefox, Zen, Vivaldi, Brave and Helium using Windows policies.
 # Run it: right-click this file > Run with PowerShell, or paste into PowerShell:
 #   irm https://raw.githubusercontent.com/AnimeKaizoku/Browser-Tools/main/Browser-Tools.ps1 | iex
 
@@ -81,6 +81,13 @@ $browsers = @(
         Models  = @("$users\AppData\Local\Vivaldi\User Data\OptGuideOnDeviceModel")
     }
     [pscustomobject]@{
+        Name    = 'Brave'
+        Key     = 'HKLM:\SOFTWARE\Policies\BraveSoftware\Brave'
+        Process = 'brave'
+        Exes    = @("$pf\BraveSoftware\Brave-Browser\Application\brave.exe", "$pf86\BraveSoftware\Brave-Browser\Application\brave.exe", "$users\AppData\Local\BraveSoftware\Brave-Browser\Application\brave.exe")
+        Models  = @("$users\AppData\Local\BraveSoftware\Brave-Browser*\User Data\OptGuideOnDeviceModel")
+    }
+    [pscustomobject]@{
         Name    = 'Helium'
         Key     = 'HKLM:\SOFTWARE\Policies\Helium'
         # Helium keeps Chromium's chrome.exe name; Brand is its file description, which Get-Running uses to tell it apart from Chrome
@@ -139,6 +146,7 @@ $chromiumOld = [ordered]@{
 $oldPolicies = @{
     Chrome  = $chromiumOld
     Vivaldi = $chromiumOld
+    Brave   = $chromiumOld
     Helium  = $chromiumOld
     Edge    = [ordered]@{
         MetricsReportingEnabled    = 'Obsolete: Edge ignores it. "Diagnostic data" replaces it.'
@@ -191,7 +199,8 @@ S Chrome Clutter 'New Tab page cards' 'Hides the cards on the New Tab page.' @{ 
 S Chrome Clutter 'Default browser nag' 'Stops Chrome asking to be the default browser. It can no longer set itself as default.' @{ DefaultBrowserSettingEnabled = 0 }
 S Chrome Clutter 'Run in background' 'Chrome fully exits when its last window is closed.' @{ BackgroundModeEnabled = 0 }
 S Chrome Clutter 'Separate profile bubble' 'Stops the "continue in a separate profile?" bubble when you sign in to a Google account on the web.' @{ SigninInterceptionEnabled = 0 }
-S Chrome Optional 'Address bar suggestions' 'Stops sending what you type in the address bar to Google. You lose search suggestions.' @{ SearchSuggestEnabled = 0 } -default $false
+S Chrome Optional 'Address bar suggestions' 'Stops sending what you type in the address bar to Google, and removes Google''s list of your recent searches when you click it. You lose search suggestions.' @{ SearchSuggestEnabled = 0 } -default $false
+S Chrome Optional 'Experiments' 'Stops Chrome downloading feature experiments. Critical fixes still arrive.' @{ ChromeVariations = 1 } -default $false
 S Chrome Optional 'Memory Saver' 'Frees memory from tabs you are not using. They reload when you go back to them.' @{ HighEfficiencyModeEnabled = 1; MemorySaverModeSavings = 1 } -default $false
 S Chrome Optional 'Background timer throttling' 'Slows timers in background tabs to once a minute after 5 minutes, saving CPU and battery. Alerts from web apps in background tabs can arrive late.' @{ IntensiveWakeUpThrottlingEnabled = 1 } -default $false
 S Chrome Optional 'Hide local IP from WebRTC' 'Stops calls and WebRTC sites seeing your local network address. Call quality may drop on some networks.' @{ WebRtcIPHandling = 'default_public_interface_only' } -default $false
@@ -319,6 +328,40 @@ S Helium Optional 'Device access prompts' 'Stops websites asking for USB, HID, s
 S Helium Optional 'Notification prompts' 'Blocks website notifications and the prompts asking to show them.' @{ DefaultNotificationsSetting = 2 } -default $false
 S Helium Optional 'Location prompts' 'Blocks websites from asking for your location.' @{ DefaultGeolocationSetting = 2 } -default $false
 S Helium Optional 'Saved card autofill' 'Stops saving and filling in payment cards.' @{ AutofillSettings = '[{"url_pattern":"*","blocked_types":["payments"]}]'; AutofillCreditCardEnabled = 0 } -default $false
+
+# ---------------- Brave ----------------
+# Brave keeps encrypted DNS on when policies are set, and obeys MetricsReportingEnabled on home PCs too
+S Brave AI 'Leo AI assistant' 'Turns off Leo, Brave''s AI chat in the sidebar, address bar and right-click menu.' @{ BraveAIChatEnabled = 0 }
+S Brave AI 'Local AI' 'Turns off Brave''s on-device AI features, such as AI history search.' @{ BraveLocalAIEnabled = 0 }
+S Brave AI 'On-device AI model' 'Makes sure Brave never downloads Chromium''s on-device AI model, and deletes it if already downloaded.' @{ GenAILocalFoundationalModelSettings = 1 }
+S Brave AI 'Built-in AI for websites' 'Stops websites using the browser''s built-in AI APIs.' @{ BuiltInAIAPIsEnabled = 0 }
+S Brave Telemetry 'Product analytics (P3A)' 'Stops sending Brave anonymous usage statistics.' @{ BraveP3AEnabled = 0 }
+S Brave Telemetry 'Usage ping' 'Stops the daily ping Brave uses to count active users.' @{ BraveStatsPingEnabled = 0 }
+S Brave Telemetry 'Web Discovery' 'Stops contributing browsing data to Brave Search''s index. It is off unless you opted in; this keeps it off.' @{ BraveWebDiscoveryEnabled = 0 }
+S Brave Telemetry 'Crash reports' 'Stops sending crash reports to Brave.' @{ MetricsReportingEnabled = 0 }
+S Brave Privacy 'Saved card checks' 'Stops websites checking whether you have saved payment cards.' @{ PaymentMethodQueryEnabled = 0 }
+S Brave Clutter 'Rewards and Brave Ads' 'Turns off Brave Rewards, its ads and the BAT counter in the toolbar.' @{ BraveRewardsDisabled = 1 }
+S Brave Clutter 'Crypto wallet' 'Turns off the built-in crypto wallet and its prompts on web3 sites.' @{ BraveWalletDisabled = 1 }
+S Brave Clutter 'Brave News' 'Removes the news feed from the New Tab page.' @{ BraveNewsDisabled = 1 }
+S Brave Clutter 'Brave Talk' 'Removes the Brave Talk video calls entry from the New Tab page.' @{ BraveTalkDisabled = 1 }
+S Brave Clutter 'Default browser nag' 'Stops Brave asking to be the default browser. It can no longer set itself as default.' @{ DefaultBrowserSettingEnabled = 0 }
+S Brave Clutter 'Run in background' 'Brave fully exits when its last window is closed.' @{ BackgroundModeEnabled = 0 }
+S Brave Optional 'Built-in VPN' 'Removes the paid Brave VPN button and its prompts.' @{ BraveVPNDisabled = 1 } -default $false
+S Brave Optional 'Tor windows' 'Removes private windows with Tor.' @{ TorDisabled = 1 } -default $false
+S Brave Optional 'Playlist' 'Turns off Playlist, which saves videos to watch later.' @{ BravePlaylistEnabled = 0 } -default $false
+S Brave Optional 'Speedreader' 'Turns off the reader view for articles.' @{ BraveSpeedreaderEnabled = 0 } -default $false
+S Brave Optional 'Wayback Machine' 'Stops offering archived copies of pages that fail to load.' @{ BraveWaybackMachineEnabled = 0 } -default $false
+S Brave Optional 'Email aliases' 'Turns off creating email aliases for sign-up forms.' @{ EmailAliasesEnabled = 0 } -default $false
+S Brave Optional 'Address bar suggestions' 'Stops sending what you type in the address bar to your search engine. You lose search suggestions.' @{ SearchSuggestEnabled = 0 } -default $false
+S Brave Optional 'Preloading' 'Turns off preloading pages. Pages may load a little slower.' @{ NetworkPredictionOptions = 2 } -default $false
+S Brave Optional 'Memory Saver' 'Frees memory from tabs you are not using. They reload when you go back to them.' @{ HighEfficiencyModeEnabled = 1; MemorySaverModeSavings = 1 } -default $false
+S Brave Optional 'Background timer throttling' 'Slows timers in background tabs to once a minute after 5 minutes, saving CPU and battery. Alerts from web apps in background tabs can arrive late.' @{ IntensiveWakeUpThrottlingEnabled = 1 } -default $false
+S Brave Optional 'Hide local IP from WebRTC' 'Stops calls and WebRTC sites seeing your local network address. Call quality may drop on some networks.' @{ WebRtcIPHandling = 'default_public_interface_only' } -default $false
+S Brave Optional 'Device access prompts' 'Stops websites asking for USB, HID, serial or Bluetooth devices. Web tools that flash or configure devices stop working.' @{ DefaultWebUsbGuardSetting = 2; DefaultWebHidGuardSetting = 2; DefaultSerialGuardSetting = 2; DefaultWebBluetoothGuardSetting = 2 } -default $false
+S Brave Optional 'Notification prompts' 'Blocks website notifications and the prompts asking to show them.' @{ DefaultNotificationsSetting = 2 } -default $false
+S Brave Optional 'Location prompts' 'Blocks websites from asking for your location.' @{ DefaultGeolocationSetting = 2 } -default $false
+S Brave Optional 'Password manager' 'Turns off the built-in password manager, for people who use a separate one.' @{ PasswordManagerEnabled = 0 } -default $false
+S Brave Optional 'Saved card autofill' 'Stops saving and filling in payment cards.' @{ AutofillSettings = '[{"url_pattern":"*","blocked_types":["payments"]}]'; AutofillCreditCardEnabled = 0 } -default $false
 
 # ---------------- Firefox and Zen ----------------
 # AIControls is Firefox 149 and newer, GenerativeAI covers 144 to 149
@@ -539,6 +582,7 @@ function Set-Ticked($restore) {
     $b = Current
     $ticked = @($b.List.CheckedItems | ForEach-Object { $_.Tag })
     if (-not $ticked) { return }
+    $saved = Backup-Policies $b
     $state = Read-Policies $b
     $prefs = $state.Prefs
     # on restore, keep values that another, still applied setting shares (for example GenerativeAI\Locked)
@@ -583,8 +627,22 @@ function Set-Ticked($restore) {
     $n = $ticked.Count - $skipped.Count
     $did = if ($restore) { "restored $n feature(s) to the browser's default" } else { "turned off $n feature(s)" }
     $note = if ($skipped) { "`n`nThe existing Firefox ""Preferences"" policy is not valid JSON, so it was left untouched and these settings were skipped: $($skipped -join ', ')." }
-    [void](Msg "$($b.Name): $did.$note`n`nRestart the browser to apply. Chrome, Edge and Helium can also reload policies from chrome://policy, edge://policy or helium://policy.")
+    [void](Msg "$($b.Name): $did.$note$(Saved-Note $saved)`n`nRestart the browser to apply. Chrome, Edge and Helium can also reload policies from chrome://policy, edge://policy or helium://policy.")
 }
+
+# Saves the browser's policy key to a .reg file before it changes, when the backup box is ticked.
+# Returns the file, or nothing when there was nothing to save.
+function Backup-Policies($b) {
+    if (-not $backup.Checked -or -not (Test-Path $b.Key)) { return }
+    $dir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) "$title backups"
+    New-Item -ItemType Directory -Path $dir -Force | Out-Null
+    $file = Join-Path $dir ('{0} {1:yyyy-MM-dd HHmmss}.reg' -f $b.Name, (Get-Date))
+    $out = & reg.exe export $b.Key.Replace(':', '') $file /y 2>&1
+    if ($LASTEXITCODE) { throw "Could not back up $($b.Key), so nothing was changed:`n`n$out" }
+    $file
+}
+
+function Saved-Note($file) { if ($file) { "`n`nThe previous policies were saved to:`n$file`nDouble-click it to put them back." } }
 
 function Get-ModelDirs($b) { @(Get-ChildItem $b.Models -Directory -Force -ErrorAction SilentlyContinue) }
 
@@ -704,11 +762,12 @@ Add-Button 'Clean up old policies' {
     }
     $list = ($old | ForEach-Object { "$($_.Id) = $($_.Current)`n      $($_.Why)" }) -join "`n"
     if ((Msg "Found $($old.Count) old $($b.Name) policies that the browser no longer uses or that newer policies replace:`n`n$list`n`nRemove them?" 'YesNo' 'Question') -ne 'Yes') { return }
+    $saved = Backup-Policies $b
     foreach ($v in $old) {
         Remove-ItemProperty -Path $v.Path -Name $v.Prop -ErrorAction SilentlyContinue
         Remove-EmptyKeys $b $v.Path
     }
-    [void](Msg "$($b.Name): removed $($old.Count) old policies.`n`nRestart the browser to apply.")
+    [void](Msg "$($b.Name): removed $($old.Count) old policies.$(Saved-Note $saved)`n`nRestart the browser to apply.")
 }
 
 Add-Button 'Tick recommended' { foreach ($i in (Current).List.Items) { $i.Checked = $i.Tag.Default } }
@@ -731,6 +790,16 @@ Add-Button 'Load ticks...' {
     $loaded = Import-Preset $dialog.FileName
     [void](Msg "Loaded ticks for: $($loaded -join ', ').`n`nNothing is changed yet. Check each tab, then click ""Turn off ticked"" on it.")
 }
+
+$backup = New-Object Windows.Forms.CheckBox
+$backup.Text = 'Back up policies before changes'
+$backup.Checked = $true
+$backup.AutoSize = $true
+$backup.FlatStyle = 'Flat'
+$backup.Margin = New-Object Windows.Forms.Padding((Px 10), (Px 7), 0, 0)
+$panel.Controls.Add($backup)
+$tips = New-Object Windows.Forms.ToolTip
+$tips.SetToolTip($backup, "Saves the tab's current policies to Documents\$title backups as a .reg file before every change.")
 
 # ---------------- Theme: follows the Windows light/dark app mode, checked every 2 seconds ----------------
 $palettes = @{
@@ -774,7 +843,7 @@ function Set-Theme($dark) {
     $form.ForeColor = C $p.Fore
     $info.ForeColor = C $p.Muted
     foreach ($btn in $panel.Controls) {
-        $btn.BackColor = C $p.Button
+        $btn.BackColor = C $(if ($btn -eq $backup) { $p.Back } else { $p.Button })
         $btn.ForeColor = C $p.Fore
         $btn.FlatAppearance.BorderColor = C $p.Border
     }

@@ -1,6 +1,6 @@
 # Browser Tools
 
-A small Windows tool that turns off AI features, telemetry and clutter in **Chrome, Edge, Firefox, Zen, Vivaldi and Helium** using official browser policies. You get a window with a ticklist per browser, a short explanation for every setting, and its current status on your PC. It follows your Windows light or dark mode, and switches when you change it.
+A small Windows tool that turns off AI features, telemetry and clutter in **Chrome, Edge, Firefox, Zen, Vivaldi, Brave and Helium** using official browser policies. You get a window with a ticklist per browser, a short explanation for every setting, and its current status on your PC. It follows your Windows light or dark mode, and switches when you change it.
 
 ![Browser Tools window](screenshot.png)
 
@@ -24,11 +24,12 @@ Either way it asks for administrator rights, because browser policies live under
 - **Turn off ticked** writes the policies. Restart the browser afterwards.
 - **Restore ticked to default** removes them again, so the browser goes back to normal.
 - **Delete AI model files** frees the on-device AI model (several GB) that Chrome and Edge download. Firefox and Zen delete their own models once their AI features are blocked.
+- **Back up policies before changes** (ticked) saves the tab's policies to `Documents\Browser Tools backups` as a `.reg` file before every change. Double-click one to put those policies back.
 - **Clean up old policies** lists policies on that tab that the browser no longer uses or that a newer policy replaced (for example old Privacy Sandbox settings in Chrome), and removes them after you confirm.
 - **Save ticks...** and **Load ticks...** store the ticks of every tab in a small `.json` file, so you can share your setup and load it on another PC. Loading only sets the ticks; click **Turn off ticked** on each tab to apply.
 - Hover a row to see exactly which policies it sets.
 
-You can check what a browser picked up at `chrome://policy`, `edge://policy`, `about:policies` (Firefox, Zen), `vivaldi://policy` or `helium://policy`.
+You can check what a browser picked up at `chrome://policy`, `edge://policy`, `about:policies` (Firefox, Zen), `vivaldi://policy`, `brave://policy` or `helium://policy`.
 
 ## Good to know
 
@@ -39,5 +40,6 @@ You can check what a browser picked up at `chrome://policy`, `edge://policy`, `a
 - **Chrome:** "Usage and crash reports" is only obeyed on work-managed PCs; at home, also untick it in Chrome settings.
 - **Edge:** there is no policy that removes the Copilot button for personal Microsoft accounts. Items marked "(work accounts)" only apply to work or school profiles.
 - **Vivaldi** reads policies but only officially supports them from version 8.3.
+- **Brave** keeps its encrypted DNS on when policies are set, so it needs no DNS setting. Its VPN and Tor windows are in the Optional group.
 - **Helium** is built on ungoogled-chromium, which already removes Google's AI, telemetry and sign-in, so its tab is short. It reads its own policy key (`HKLM\SOFTWARE\Policies\Helium`).
 - Settings you change here apply to every user on the PC.
