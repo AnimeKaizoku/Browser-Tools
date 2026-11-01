@@ -84,7 +84,8 @@ $browsers = @(
         Name    = 'Brave'
         Key     = 'HKLM:\SOFTWARE\Policies\BraveSoftware\Brave'
         Process = 'brave'
-        Exes    = @("$pf\BraveSoftware\Brave-Browser\Application\brave.exe", "$pf86\BraveSoftware\Brave-Browser\Application\brave.exe", "$users\AppData\Local\BraveSoftware\Brave-Browser\Application\brave.exe")
+        # Brave-Browser* also finds Beta and Nightly, which read the same policy key
+        Exes    = @("$pf\BraveSoftware\Brave-Browser*\Application\brave.exe", "$pf86\BraveSoftware\Brave-Browser*\Application\brave.exe", "$users\AppData\Local\BraveSoftware\Brave-Browser*\Application\brave.exe")
         Models  = @("$users\AppData\Local\BraveSoftware\Brave-Browser*\User Data\OptGuideOnDeviceModel")
     }
     [pscustomobject]@{
@@ -287,81 +288,61 @@ S Edge Optional 'Saved card autofill' 'Stops saving and filling in payment cards
 
 # ---------------- Vivaldi ----------------
 # Vivaldi reads Chromium policies from its own key, but only officially supports them from 8.3
-S Vivaldi AI 'On-device AI model' 'Stops Vivaldi downloading Chromium''s on-device AI model and deletes it if already downloaded.' @{ GenAILocalFoundationalModelSettings = 1 }
-S Vivaldi AI 'Built-in AI for websites' 'Stops websites using the browser''s built-in AI APIs.' @{ BuiltInAIAPIsEnabled = 0 }
 S Vivaldi Telemetry 'Make searches and browsing better' 'Stops sending the URLs you visit to improve browsing.' @{ UrlKeyedAnonymizedDataCollectionEnabled = 0 }
 S Vivaldi Telemetry 'Enhanced spell check' 'Uses only the local spell checker, not the web spelling service.' @{ SpellCheckServiceEnabled = 0 }
-S Vivaldi Privacy 'Keep encrypted DNS on' 'Vivaldi turns off its automatic encrypted DNS once any policy is set. This turns it back on.' @{ DnsOverHttpsMode = 'automatic' }
-S Vivaldi Privacy 'Saved card checks' 'Stops websites checking whether you have saved payment cards.' @{ PaymentMethodQueryEnabled = 0 }
 S Vivaldi Clutter 'Direct Match' 'Turns off sponsored Direct Match suggestions in the address bar.' @{ VivaldiDirectMatchEnabled = 0 }
 S Vivaldi Clutter 'Promotions' 'Hides promotional content.' @{ PromotionsEnabled = 0 }
-S Vivaldi Clutter 'Default browser nag' 'Stops Vivaldi asking to be the default browser.' @{ DefaultBrowserSettingEnabled = 0 }
-S Vivaldi Clutter 'Run in background' 'Vivaldi fully exits when its last window is closed.' @{ BackgroundModeEnabled = 0 }
-S Vivaldi Optional 'Address bar suggestions' 'Stops sending what you type in the address bar to your search engine. You lose search suggestions.' @{ SearchSuggestEnabled = 0 } -default $false
 S Vivaldi Optional 'Built-in VPN' 'Hides the built-in Proton VPN.' @{ VivaldiVPNEnabled = 0 } -default $false
 S Vivaldi Optional 'Online error help' 'Stops using a web service to suggest pages when a site fails to load.' @{ AlternateErrorPagesEnabled = 0 } -default $false
-S Vivaldi Optional 'Preloading' 'Turns off preloading pages. Pages may load a little slower.' @{ NetworkPredictionOptions = 2 } -default $false
-S Vivaldi Optional 'Background timer throttling' 'Slows timers in background tabs to once a minute after 5 minutes, saving CPU and battery. Alerts from web apps in background tabs can arrive late.' @{ IntensiveWakeUpThrottlingEnabled = 1 } -default $false
 S Vivaldi Optional 'Hide local IP from WebRTC' 'Stops calls and WebRTC sites seeing your local network address. Call quality may drop on some networks.' @{ WebRtcIPHandling = 'default_public_interface_only' } -default $false
 S Vivaldi Optional 'HTTPS warning' 'Warns before opening a site that cannot use a secure HTTPS connection.' @{ HttpsOnlyMode = 'force_balanced_enabled' } -default $false
-S Vivaldi Optional 'Device access prompts' 'Stops websites asking for USB, HID, serial or Bluetooth devices. Web tools that flash or configure devices stop working.' @{ DefaultWebUsbGuardSetting = 2; DefaultWebHidGuardSetting = 2; DefaultSerialGuardSetting = 2; DefaultWebBluetoothGuardSetting = 2 } -default $false
-S Vivaldi Optional 'Notification prompts' 'Blocks website notifications and the prompts asking to show them.' @{ DefaultNotificationsSetting = 2 } -default $false
-S Vivaldi Optional 'Location prompts' 'Blocks websites from asking for your location.' @{ DefaultGeolocationSetting = 2 } -default $false
 S Vivaldi Optional 'Password manager' 'Turns off the built-in password manager, for people who use a separate one.' @{ PasswordManagerEnabled = 0 } -default $false
-S Vivaldi Optional 'Saved card autofill' 'Stops saving and filling in payment cards.' @{ AutofillCreditCardEnabled = 0 } -default $false
 
 # ---------------- Helium ----------------
 # Helium is built on ungoogled-chromium, which already strips Google AI, telemetry and sign-in.
 # It reads Chromium policies from its own key. It already hides the local IP from WebRTC and has no password manager.
-S Helium AI 'On-device AI model' 'Makes sure Helium never downloads Chromium''s on-device AI model, and deletes it if already downloaded.' @{ GenAILocalFoundationalModelSettings = 1 }
-S Helium AI 'Built-in AI for websites' 'Stops websites using the browser''s built-in AI APIs.' @{ BuiltInAIAPIsEnabled = 0 }
-S Helium Privacy 'Keep encrypted DNS on' 'Helium turns off its automatic encrypted DNS once any policy is set. This turns it back on.' @{ DnsOverHttpsMode = 'automatic' }
-S Helium Privacy 'Saved card checks' 'Stops websites checking whether you have saved payment cards.' @{ PaymentMethodQueryEnabled = 0 }
-S Helium Clutter 'Default browser nag' 'Stops Helium asking to be the default browser. It can no longer set itself as default.' @{ DefaultBrowserSettingEnabled = 0 }
-S Helium Clutter 'Run in background' 'Helium fully exits when its last window is closed.' @{ BackgroundModeEnabled = 0 }
-S Helium Optional 'Address bar suggestions' 'Stops sending what you type in the address bar to your search engine. You lose search suggestions.' @{ SearchSuggestEnabled = 0 } -default $false
-S Helium Optional 'Preloading' 'Turns off preloading pages. Pages may load a little slower.' @{ NetworkPredictionOptions = 2 } -default $false
 S Helium Optional 'Memory Saver' 'Frees memory from tabs you are not using. They reload when you go back to them.' @{ HighEfficiencyModeEnabled = 1; MemorySaverModeSavings = 1 } -default $false
-S Helium Optional 'Background timer throttling' 'Slows timers in background tabs to once a minute after 5 minutes, saving CPU and battery. Alerts from web apps in background tabs can arrive late.' @{ IntensiveWakeUpThrottlingEnabled = 1 } -default $false
 S Helium Optional 'HTTPS warning' 'Warns before opening a site that cannot use a secure HTTPS connection.' @{ HttpsOnlyMode = 'force_balanced_enabled' } -default $false
-S Helium Optional 'Device access prompts' 'Stops websites asking for USB, HID, serial or Bluetooth devices. Web tools that flash or configure devices stop working.' @{ DefaultWebUsbGuardSetting = 2; DefaultWebHidGuardSetting = 2; DefaultSerialGuardSetting = 2; DefaultWebBluetoothGuardSetting = 2 } -default $false
-S Helium Optional 'Notification prompts' 'Blocks website notifications and the prompts asking to show them.' @{ DefaultNotificationsSetting = 2 } -default $false
-S Helium Optional 'Location prompts' 'Blocks websites from asking for your location.' @{ DefaultGeolocationSetting = 2 } -default $false
-S Helium Optional 'Saved card autofill' 'Stops saving and filling in payment cards.' @{ AutofillSettings = '[{"url_pattern":"*","blocked_types":["payments"]}]'; AutofillCreditCardEnabled = 0 } -default $false
 
 # ---------------- Brave ----------------
-# Brave keeps encrypted DNS on when policies are set, and obeys MetricsReportingEnabled on home PCs too
 S Brave AI 'Leo AI assistant' 'Turns off Leo, Brave''s AI chat in the sidebar, address bar and right-click menu.' @{ BraveAIChatEnabled = 0 }
 S Brave AI 'Local AI' 'Turns off Brave''s on-device AI features, such as AI history search.' @{ BraveLocalAIEnabled = 0 }
-S Brave AI 'On-device AI model' 'Makes sure Brave never downloads Chromium''s on-device AI model, and deletes it if already downloaded.' @{ GenAILocalFoundationalModelSettings = 1 }
-S Brave AI 'Built-in AI for websites' 'Stops websites using the browser''s built-in AI APIs.' @{ BuiltInAIAPIsEnabled = 0 }
 S Brave Telemetry 'Product analytics (P3A)' 'Stops sending Brave anonymous usage statistics.' @{ BraveP3AEnabled = 0 }
 S Brave Telemetry 'Usage ping' 'Stops the daily ping Brave uses to count active users.' @{ BraveStatsPingEnabled = 0 }
 S Brave Telemetry 'Web Discovery' 'Stops contributing browsing data to Brave Search''s index. It is off unless you opted in; this keeps it off.' @{ BraveWebDiscoveryEnabled = 0 }
 S Brave Telemetry 'Crash reports' 'Stops sending crash reports to Brave.' @{ MetricsReportingEnabled = 0 }
-S Brave Privacy 'Saved card checks' 'Stops websites checking whether you have saved payment cards.' @{ PaymentMethodQueryEnabled = 0 }
 S Brave Clutter 'Rewards and Brave Ads' 'Turns off Brave Rewards, its ads and the BAT counter in the toolbar.' @{ BraveRewardsDisabled = 1 }
 S Brave Clutter 'Crypto wallet' 'Turns off the built-in crypto wallet and its prompts on web3 sites.' @{ BraveWalletDisabled = 1 }
 S Brave Clutter 'Brave News' 'Removes the news feed from the New Tab page.' @{ BraveNewsDisabled = 1 }
 S Brave Clutter 'Brave Talk' 'Removes the Brave Talk video calls entry from the New Tab page.' @{ BraveTalkDisabled = 1 }
-S Brave Clutter 'Default browser nag' 'Stops Brave asking to be the default browser. It can no longer set itself as default.' @{ DefaultBrowserSettingEnabled = 0 }
-S Brave Clutter 'Run in background' 'Brave fully exits when its last window is closed.' @{ BackgroundModeEnabled = 0 }
 S Brave Optional 'Built-in VPN' 'Removes the paid Brave VPN button and its prompts.' @{ BraveVPNDisabled = 1 } -default $false
 S Brave Optional 'Tor windows' 'Removes private windows with Tor.' @{ TorDisabled = 1 } -default $false
 S Brave Optional 'Playlist' 'Turns off Playlist, which saves videos to watch later.' @{ BravePlaylistEnabled = 0 } -default $false
 S Brave Optional 'Speedreader' 'Turns off the reader view for articles.' @{ BraveSpeedreaderEnabled = 0 } -default $false
 S Brave Optional 'Wayback Machine' 'Stops offering archived copies of pages that fail to load.' @{ BraveWaybackMachineEnabled = 0 } -default $false
 S Brave Optional 'Email aliases' 'Turns off creating email aliases for sign-up forms.' @{ EmailAliasesEnabled = 0 } -default $false
-S Brave Optional 'Address bar suggestions' 'Stops sending what you type in the address bar to your search engine. You lose search suggestions.' @{ SearchSuggestEnabled = 0 } -default $false
-S Brave Optional 'Preloading' 'Turns off preloading pages. Pages may load a little slower.' @{ NetworkPredictionOptions = 2 } -default $false
 S Brave Optional 'Memory Saver' 'Frees memory from tabs you are not using. They reload when you go back to them.' @{ HighEfficiencyModeEnabled = 1; MemorySaverModeSavings = 1 } -default $false
-S Brave Optional 'Background timer throttling' 'Slows timers in background tabs to once a minute after 5 minutes, saving CPU and battery. Alerts from web apps in background tabs can arrive late.' @{ IntensiveWakeUpThrottlingEnabled = 1 } -default $false
 S Brave Optional 'Hide local IP from WebRTC' 'Stops calls and WebRTC sites seeing your local network address. Call quality may drop on some networks.' @{ WebRtcIPHandling = 'default_public_interface_only' } -default $false
-S Brave Optional 'Device access prompts' 'Stops websites asking for USB, HID, serial or Bluetooth devices. Web tools that flash or configure devices stop working.' @{ DefaultWebUsbGuardSetting = 2; DefaultWebHidGuardSetting = 2; DefaultSerialGuardSetting = 2; DefaultWebBluetoothGuardSetting = 2 } -default $false
-S Brave Optional 'Notification prompts' 'Blocks website notifications and the prompts asking to show them.' @{ DefaultNotificationsSetting = 2 } -default $false
-S Brave Optional 'Location prompts' 'Blocks websites from asking for your location.' @{ DefaultGeolocationSetting = 2 } -default $false
 S Brave Optional 'Password manager' 'Turns off the built-in password manager, for people who use a separate one.' @{ PasswordManagerEnabled = 0 } -default $false
-S Brave Optional 'Saved card autofill' 'Stops saving and filling in payment cards.' @{ AutofillSettings = '[{"url_pattern":"*","blocked_types":["payments"]}]'; AutofillCreditCardEnabled = 0 } -default $false
+
+# ---------------- Shared by Vivaldi, Brave and Helium ----------------
+# Plain Chromium policies; the sections above only list what is specific to each browser
+foreach ($n in 'Vivaldi', 'Brave', 'Helium') {
+    S $n AI 'On-device AI model' "Makes sure $n never downloads Chromium's on-device AI model, and deletes it if already downloaded." @{ GenAILocalFoundationalModelSettings = 1 }
+    S $n AI 'Built-in AI for websites' 'Stops websites using the browser''s built-in AI APIs.' @{ BuiltInAIAPIsEnabled = 0 }
+    S $n Privacy 'Keep encrypted DNS on' 'Chromium browsers turn off their automatic encrypted DNS once any policy is set. This keeps it on.' @{ DnsOverHttpsMode = 'automatic' }
+    S $n Privacy 'Saved card checks' 'Stops websites checking whether you have saved payment cards.' @{ PaymentMethodQueryEnabled = 0 }
+    S $n Clutter 'Default browser nag' "Stops $n asking to be the default browser. It can no longer set itself as default." @{ DefaultBrowserSettingEnabled = 0 }
+    S $n Clutter 'Run in background' "$n fully exits when its last window is closed." @{ BackgroundModeEnabled = 0 }
+    S $n Optional 'Address bar suggestions' 'Stops sending what you type in the address bar to your search engine. You lose search suggestions.' @{ SearchSuggestEnabled = 0 } -default $false
+    S $n Optional 'Preloading' 'Turns off preloading pages. Pages may load a little slower.' @{ NetworkPredictionOptions = 2 } -default $false
+    S $n Optional 'Background timer throttling' 'Slows timers in background tabs to once a minute after 5 minutes, saving CPU and battery. Alerts from web apps in background tabs can arrive late.' @{ IntensiveWakeUpThrottlingEnabled = 1 } -default $false
+    S $n Optional 'Device access prompts' 'Stops websites asking for USB, HID, serial or Bluetooth devices. Web tools that flash or configure devices stop working.' @{ DefaultWebUsbGuardSetting = 2; DefaultWebHidGuardSetting = 2; DefaultSerialGuardSetting = 2; DefaultWebBluetoothGuardSetting = 2 } -default $false
+    S $n Optional 'Notification prompts' 'Blocks website notifications and the prompts asking to show them.' @{ DefaultNotificationsSetting = 2 } -default $false
+    S $n Optional 'Location prompts' 'Blocks websites from asking for your location.' @{ DefaultGeolocationSetting = 2 } -default $false
+    # AutofillSettings replaces AutofillCreditCardEnabled in newer Chromium; each browser ignores the one it does not know
+    S $n Optional 'Saved card autofill' 'Stops saving and filling in payment cards.' @{ AutofillSettings = '[{"url_pattern":"*","blocked_types":["payments"]}]'; AutofillCreditCardEnabled = 0 } -default $false
+}
 
 # ---------------- Firefox and Zen ----------------
 # AIControls is Firefox 149 and newer, GenerativeAI covers 144 to 149
@@ -582,7 +563,7 @@ function Set-Ticked($restore) {
     $b = Current
     $ticked = @($b.List.CheckedItems | ForEach-Object { $_.Tag })
     if (-not $ticked) { return }
-    $saved = Backup-Policies $b
+    $backupNote = Backup-Policies $b
     $state = Read-Policies $b
     $prefs = $state.Prefs
     # on restore, keep values that another, still applied setting shares (for example GenerativeAI\Locked)
@@ -627,22 +608,28 @@ function Set-Ticked($restore) {
     $n = $ticked.Count - $skipped.Count
     $did = if ($restore) { "restored $n feature(s) to the browser's default" } else { "turned off $n feature(s)" }
     $note = if ($skipped) { "`n`nThe existing Firefox ""Preferences"" policy is not valid JSON, so it was left untouched and these settings were skipped: $($skipped -join ', ')." }
-    [void](Msg "$($b.Name): $did.$note$(Saved-Note $saved)`n`nRestart the browser to apply. Chrome, Edge and Helium can also reload policies from chrome://policy, edge://policy or helium://policy.")
+    [void](Msg "$($b.Name): $did.$note$backupNote`n`nRestart the browser to apply. Chromium browsers can also reload policies from their policy page, such as chrome://policy, edge://policy or brave://policy.")
 }
 
-# Saves the browser's policy key to a .reg file before it changes, when the backup box is ticked.
-# Returns the file, or nothing when there was nothing to save.
+# Saves the browser's policy key to a .reg file before it changes, when the backup box is ticked,
+# and returns a note for the confirmation message. The file deletes the key before writing the saved values,
+# so importing it also undoes policies added later.
 function Backup-Policies($b) {
-    if (-not $backup.Checked -or -not (Test-Path $b.Key)) { return }
+    if (-not $backup.Checked) { return }
     $dir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) "$title backups"
     New-Item -ItemType Directory -Path $dir -Force | Out-Null
-    $file = Join-Path $dir ('{0} {1:yyyy-MM-dd HHmmss}.reg' -f $b.Name, (Get-Date))
-    $out = & reg.exe export $b.Key.Replace(':', '') $file /y 2>&1
-    if ($LASTEXITCODE) { throw "Could not back up $($b.Key), so nothing was changed:`n`n$out" }
-    $file
+    $file = Join-Path $dir ('{0} {1:yyyy-MM-dd HHmmss fff}.reg' -f $b.Name, (Get-Date))
+    $key = 'HKEY_LOCAL_MACHINE\' + $b.Key.Substring('HKLM:\'.Length)
+    $header = 'Windows Registry Editor Version 5.00'
+    $text = if (Test-Path $b.Key) {
+        $out = & reg.exe export $key $file /y 2>&1
+        if ($LASTEXITCODE) { throw "Could not back up $key, so nothing was changed:`n`n$out" }
+        Get-Content $file -Raw
+    }
+    else { $header }
+    Set-Content $file -Encoding Unicode -Value $text.Replace($header, "$header`r`n`r`n[-$key]")
+    "`n`nThe policies from before this change were saved to:`n$file`nDouble-click it to go back to them."
 }
-
-function Saved-Note($file) { if ($file) { "`n`nThe previous policies were saved to:`n$file`nDouble-click it to put them back." } }
 
 function Get-ModelDirs($b) { @(Get-ChildItem $b.Models -Directory -Force -ErrorAction SilentlyContinue) }
 
@@ -762,12 +749,12 @@ Add-Button 'Clean up old policies' {
     }
     $list = ($old | ForEach-Object { "$($_.Id) = $($_.Current)`n      $($_.Why)" }) -join "`n"
     if ((Msg "Found $($old.Count) old $($b.Name) policies that the browser no longer uses or that newer policies replace:`n`n$list`n`nRemove them?" 'YesNo' 'Question') -ne 'Yes') { return }
-    $saved = Backup-Policies $b
+    $backupNote = Backup-Policies $b
     foreach ($v in $old) {
         Remove-ItemProperty -Path $v.Path -Name $v.Prop -ErrorAction SilentlyContinue
         Remove-EmptyKeys $b $v.Path
     }
-    [void](Msg "$($b.Name): removed $($old.Count) old policies.$(Saved-Note $saved)`n`nRestart the browser to apply.")
+    [void](Msg "$($b.Name): removed $($old.Count) old policies.$backupNote`n`nRestart the browser to apply.")
 }
 
 Add-Button 'Tick recommended' { foreach ($i in (Current).List.Items) { $i.Checked = $i.Tag.Default } }
