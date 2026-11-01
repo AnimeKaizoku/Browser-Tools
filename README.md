@@ -20,6 +20,7 @@ Either way it asks for administrator rights, because browser policies live under
 
 - Pick a browser tab. Recommended settings (AI, Telemetry, Privacy, Clutter) are already ticked.
 - The **Optional** group is unticked because each one changes how the browser behaves: search suggestions, Memory Saver and sleeping tabs, background timer throttling, hiding your local IP from WebRTC, strict tracking protection, HTTPS warnings, blocking notification, location and device prompts, blocking dangerous downloads, and turning off the built-in password manager or card autofill.
+- **Tick recommended** goes back to those ticks on the current tab: everything except the Optional group.
 - **Turn off ticked** writes the policies. Restart the browser afterwards.
 - **Restore ticked to default** removes them again, so the browser goes back to normal.
 - **Delete AI model files** frees the on-device AI model (several GB) that Chrome and Edge download. Firefox and Zen delete their own models once their AI features are blocked.

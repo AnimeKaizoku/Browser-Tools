@@ -713,6 +713,7 @@ Add-Button 'Clean up old policies' {
     [void](Msg "$($b.Name): removed $($old.Count) old policies.`n`nRestart the browser to apply.")
 }
 
+Add-Button 'Tick recommended' { foreach ($i in (Current).List.Items) { $i.Checked = $i.Tag.Default } }
 Add-Button 'Tick all' { foreach ($i in (Current).List.Items) { $i.Checked = $true } }
 Add-Button 'Untick all' { foreach ($i in (Current).List.Items) { $i.Checked = $false } }
 
