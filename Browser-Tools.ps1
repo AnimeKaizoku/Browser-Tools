@@ -1,4 +1,4 @@
-# Browser Tools: turn off AI features, telemetry and clutter in Chrome, Edge, Firefox, Zen and Vivaldi using Windows policies.
+# Browser Tools: turn off AI features, telemetry and clutter in Chrome, Edge, Firefox, Zen, Vivaldi and Helium using Windows policies.
 # Run it: right-click this file > Run with PowerShell, or paste into PowerShell:
 #   irm https://raw.githubusercontent.com/AnimeKaizoku/Browser-Tools/main/Browser-Tools.ps1 | iex
 
@@ -80,6 +80,14 @@ $browsers = @(
         Exes    = @("$pf\Vivaldi\Application\vivaldi.exe", "$users\AppData\Local\Vivaldi\Application\vivaldi.exe")
         Models  = @("$users\AppData\Local\Vivaldi\User Data\OptGuideOnDeviceModel")
     }
+    [pscustomobject]@{
+        Name    = 'Helium'
+        Key     = 'HKLM:\SOFTWARE\Policies\Helium'
+        # Helium keeps Chromium's chrome.exe name; Get-Running tells it apart from Chrome by folder
+        Process = 'chrome'
+        Exes    = @("$pf\imput\Helium\Application\chrome.exe", "$users\AppData\Local\imput\Helium\Application\chrome.exe")
+        Models  = @("$users\AppData\Local\imput\Helium\User Data\OptGuideOnDeviceModel")
+    }
 )
 
 # "Subkey\ValueName" (or just "ValueName") -> Id, Sub, Prop
@@ -130,7 +138,8 @@ $chromiumOld = [ordered]@{
 $oldPolicies = @{
     Chrome  = $chromiumOld
     Vivaldi = $chromiumOld
-    Edge    = [ordered]@{
+    Helium  = $chromiumOld
+    Edge   = [ordered]@{
         MetricsReportingEnabled    = 'Obsolete: Edge ignores it. "Diagnostic data" replaces it.'
         WebWidgetAllowed           = 'Deprecated: replaced by "Desktop search bar" (SearchbarAllowed).'
         DiscoverPageContextEnabled = 'Obsolete: Edge ignores it.'
@@ -290,6 +299,25 @@ S Vivaldi Optional 'Notification prompts' 'Blocks website notifications and the 
 S Vivaldi Optional 'Location prompts' 'Blocks websites from asking for your location.' @{ DefaultGeolocationSetting = 2 } -default $false
 S Vivaldi Optional 'Password manager' 'Turns off the built-in password manager, for people who use a separate one.' @{ PasswordManagerEnabled = 0 } -default $false
 S Vivaldi Optional 'Saved card autofill' 'Stops saving and filling in payment cards.' @{ AutofillCreditCardEnabled = 0 } -default $false
+
+# ---------------- Helium ----------------
+# Helium is built on ungoogled-chromium, which already strips Google AI, telemetry and sign-in.
+# It reads Chromium policies from its own key. It already hides the local IP from WebRTC and has no password manager.
+S Helium AI 'On-device AI model' 'Makes sure Helium never downloads Chromium''s on-device AI model, and deletes it if already downloaded.' @{ GenAILocalFoundationalModelSettings = 1 }
+S Helium AI 'Built-in AI for websites' 'Stops websites using the browser''s built-in AI APIs.' @{ BuiltInAIAPIsEnabled = 0 }
+S Helium Privacy 'Keep encrypted DNS on' 'Helium turns off its automatic encrypted DNS once any policy is set. This turns it back on.' @{ DnsOverHttpsMode = 'automatic' }
+S Helium Privacy 'Saved card checks' 'Stops websites checking whether you have saved payment cards.' @{ PaymentMethodQueryEnabled = 0 }
+S Helium Clutter 'Default browser nag' 'Stops Helium asking to be the default browser.' @{ DefaultBrowserSettingEnabled = 0 }
+S Helium Clutter 'Run in background' 'Helium fully exits when its last window is closed.' @{ BackgroundModeEnabled = 0 }
+S Helium Optional 'Address bar suggestions' 'Stops sending what you type in the address bar to your search engine. You lose search suggestions.' @{ SearchSuggestEnabled = 0 } -default $false
+S Helium Optional 'Preloading' 'Turns off preloading pages. Pages may load a little slower.' @{ NetworkPredictionOptions = 2 } -default $false
+S Helium Optional 'Memory Saver' 'Frees memory from tabs you are not using. They reload when you go back to them.' @{ HighEfficiencyModeEnabled = 1; MemorySaverModeSavings = 1 } -default $false
+S Helium Optional 'Background timer throttling' 'Slows timers in background tabs to once a minute after 5 minutes, saving CPU and battery. Alerts from web apps in background tabs can arrive late.' @{ IntensiveWakeUpThrottlingEnabled = 1 } -default $false
+S Helium Optional 'HTTPS warning' 'Warns before opening a site that cannot use a secure HTTPS connection.' @{ HttpsOnlyMode = 'force_balanced_enabled' } -default $false
+S Helium Optional 'Device access prompts' 'Stops websites asking for USB, HID, serial or Bluetooth devices. Web tools that flash or configure devices stop working.' @{ DefaultWebUsbGuardSetting = 2; DefaultWebHidGuardSetting = 2; DefaultSerialGuardSetting = 2; DefaultWebBluetoothGuardSetting = 2 } -default $false
+S Helium Optional 'Notification prompts' 'Blocks website notifications and the prompts asking to show them.' @{ DefaultNotificationsSetting = 2 } -default $false
+S Helium Optional 'Location prompts' 'Blocks websites from asking for your location.' @{ DefaultGeolocationSetting = 2 } -default $false
+S Helium Optional 'Saved card autofill' 'Stops saving and filling in payment cards.' @{ AutofillCreditCardEnabled = 0 } -default $false
 
 # ---------------- Firefox and Zen ----------------
 # AIControls is Firefox 149 and newer, GenerativeAI covers 144 to 149
@@ -559,14 +587,26 @@ function Set-Ticked($restore) {
 
 function Get-ModelDirs($b) { @(Get-ChildItem $b.Models -Directory -Force -ErrorAction SilentlyContinue) }
 
+# Chrome and Helium both run as chrome.exe, so a process belongs to the browser whose install folder it runs from.
+# One from anywhere else (Chrome Beta, Canary) belongs to the first browser with that process name.
+function Get-Running($b) {
+    $same = @($browsers | Where-Object Process -eq $b.Process)
+    Get-Process $b.Process -ErrorAction SilentlyContinue | Where-Object {
+        $path = $_.Path
+        $owner = $same | Where-Object { $_.Exes | Where-Object { $path -like $_ } } | Select-Object -First 1
+        if (-not $owner) { $owner = $same[0] }
+        $owner -eq $b
+    }
+}
+
 function Close-Browser($b) {
     for ($i = 0; $i -lt 20; $i++) {
-        $running = Get-Process $b.Process -ErrorAction SilentlyContinue
+        $running = Get-Running $b
         if (-not $running) { return }
         $running | ForEach-Object { [void]$_.CloseMainWindow() }
         Start-Sleep -Milliseconds 500
     }
-    Get-Process $b.Process -ErrorAction SilentlyContinue | Stop-Process -Force
+    Get-Running $b | Stop-Process -Force
     # a forced exit releases its files in the background
     Start-Sleep -Seconds 1
 }
@@ -643,7 +683,7 @@ Add-Button 'Delete AI model files' {
     }
     $size = '{0:N2} GB' -f ((Get-ChildItem $dirs.FullName -Recurse -File -Force -ErrorAction SilentlyContinue | Measure-Object Length -Sum).Sum / 1GB)
     if ((Msg "$($b.Name)'s on-device AI model takes ${size}:`n`n$($dirs.FullName -join "`n")`n`nDelete it?" 'YesNo' 'Question') -ne 'Yes') { return }
-    if (Get-Process $b.Process -ErrorAction SilentlyContinue) {
+    if (Get-Running $b) {
         if ((Msg "$($b.Name) has to be closed first. Close it now?`n`nUnsaved work in open tabs will be lost." 'OKCancel' 'Warning') -ne 'OK') { return }
         Close-Browser $b
     }

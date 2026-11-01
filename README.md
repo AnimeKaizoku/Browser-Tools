@@ -1,6 +1,6 @@
 # Browser Tools
 
-A small Windows tool that turns off AI features, telemetry and clutter in **Chrome, Edge, Firefox, Zen and Vivaldi** using official browser policies. You get a window with a ticklist per browser, a short explanation for every setting, and its current status on your PC. It follows your Windows light or dark mode, and switches when you change it.
+A small Windows tool that turns off AI features, telemetry and clutter in **Chrome, Edge, Firefox, Zen, Vivaldi and Helium** using official browser policies. You get a window with a ticklist per browser, a short explanation for every setting, and its current status on your PC. It follows your Windows light or dark mode, and switches when you change it.
 
 ![Browser Tools window](screenshot.png)
 
@@ -27,15 +27,16 @@ Either way it asks for administrator rights, because browser policies live under
 - **Save ticks...** and **Load ticks...** store the ticks of every tab in a small `.json` file, so you can share your setup and load it on another PC. Loading only sets the ticks; click **Turn off ticked** on each tab to apply.
 - Hover a row to see exactly which policies it sets.
 
-You can check what a browser picked up at `chrome://policy`, `edge://policy`, `about:policies` (Firefox, Zen) or `vivaldi://policy`.
+You can check what a browser picked up at `chrome://policy`, `edge://policy`, `about:policies` (Firefox, Zen) `vivaldi://policy` or `helium://policy`.
 
 ## Good to know
 
 - Works on any Windows 10 or 11 PC, Home or Pro. No enterprise editions needed.
 - After applying, browsers show **"Managed by your organization"**. That is normal whenever policies are set, not malware.
-- Chrome, Edge and Vivaldi switch off their automatic encrypted DNS as soon as any policy is set. The ticked **Keep encrypted DNS on** setting turns it back on.
+- Chrome, Edge, Vivaldi and Helium switch off their automatic encrypted DNS as soon as any policy is set. The ticked **Keep encrypted DNS on** setting turns it back on.
 - **Firefox** tab covers Firefox, Developer Edition, ESR and Nightly (they share one policy key). **Zen** reads its own key, so it has its own tab.
 - **Chrome:** "Usage and crash reports" is only obeyed on work-managed PCs; at home, also untick it in Chrome settings.
 - **Edge:** there is no policy that removes the Copilot button for personal Microsoft accounts. Items marked "(work accounts)" only apply to work or school profiles.
 - **Vivaldi** reads policies but only officially supports them from version 8.3.
+- **Helium** is built on ungoogled-chromium, which already removes Google's AI, telemetry and sign-in, so its tab is short. It reads its own policy key (`HKLM\SOFTWARE\Policies\Helium`).
 - Settings you change here apply to every user on the PC.
